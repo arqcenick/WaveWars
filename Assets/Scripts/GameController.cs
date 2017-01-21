@@ -10,8 +10,9 @@ public class GameController : MonoBehaviour {
     public static GameObject Player1;
     public static int gridX = 15;
     public static int gridY = 15;
+    public static int[] hitCount;
 
-    float[] posGrid;
+    public static Vector3[] posGrid;
     public static float[] phaseGrid;
     public static bool[] hasWaveSource;
     float[] posX;
@@ -25,6 +26,8 @@ public class GameController : MonoBehaviour {
     GameObject[] grid;
     Vector2[] playerGrid;
     Vector2[] spawnPos;
+    Rigidbody[] rigids;
+    BoxCollider[] colliders;
 
     float timeStep = 0f;
 
@@ -50,8 +53,6 @@ public class GameController : MonoBehaviour {
 
         CreatePlayer(0);
         CreatePlayer(1);
-        
-
 
 
     }
@@ -64,6 +65,12 @@ public class GameController : MonoBehaviour {
         timeStep += Time.deltaTime;
         
         UpdatePositions(WaveCollection);
+
+        if(timeStep > 4f)
+        {
+            timeStep = 0;
+            RandomLoss();
+        }
         
         
 
@@ -73,31 +80,29 @@ public class GameController : MonoBehaviour {
     {
         grid = new GameObject[gridX * gridY ];
         phaseGrid = new float[gridX * gridY];
-        posGrid = new float[gridX * gridY];
+        posGrid = new Vector3[gridX * gridY];
         playerGrid = new Vector2[gridX * gridY];
         hasWaveSource = new bool[gridX * gridY];
+        hitCount = new int[gridX * gridY];
+        rigids = new Rigidbody[gridX * gridY];
+        colliders = new BoxCollider[gridX * gridY];
 
         for (int x = 0; x < gridX; x++)
             for(int y = 0; y < gridY; y++)
             {
                 grid[x * gridX + y] = (Instantiate(PreTile, new Vector3(x * 1f, 0f, y * 1f), transform.rotation) as GameObject);
+                posGrid[x * gridX + y] = grid[x * gridX + y].transform.position;
+                rigids[x * gridX + y] = grid[x * gridX + y].GetComponent<Rigidbody>();
+                colliders[x * gridX + y] = grid[x * gridX + y].transform.GetChild(0).GetComponent<BoxCollider>();
             }
 
         for (int x = 0; x < gridX; x++)
             for (int y = 0; y < gridY; y++)
             {
                 playerGrid[x * gridX + y] = new Vector2(x - 0.5f, y - 0.5f);
-            }
-
-        for (int x = 0; x < gridX; x++)
-            for (int y = 0; y < gridY; y++)
-            {
                 hasWaveSource[x * gridX + y] = false;
-            }
-        for (int x = 0; x < gridX; x++)
-            for (int y = 0; y < gridY; y++)
-            {
                 phaseGrid[x * gridX + y] = 0f;
+                hitCount[x * gridX + y] = 1;
             }
 
 
@@ -108,7 +113,7 @@ public class GameController : MonoBehaviour {
     {
         float x = spawnPos[id].x;
         float z = spawnPos[id].y;
-        playerControls[id] = (Instantiate(Player, new Vector3(x,4.01f,z), Player.transform.rotation) as GameObject).GetComponent<PlayerController>();
+        playerControls[id] = (Instantiate(Player, new Vector3(x,4.05f,z), Player.transform.rotation) as GameObject).GetComponent<PlayerController>();
         if(id == 0)
             CameraControl.Player1 = playerControls[id].gameObject;
         else
@@ -136,7 +141,6 @@ public class GameController : MonoBehaviour {
                 hasWaveSource[wave.sourceX * gridX + wave.sourceY] = false;
                 waveCollection.Remove(wave);
                 
-                
             }
                 
         }
@@ -148,9 +152,21 @@ public class GameController : MonoBehaviour {
             for (int x = 0; x < gridX; x++)
                 for (int y = 0; y < gridY; y++)
                 {
-                    Vector3 pos = grid[x * gridX + y].transform.position;
+                    if (hitCount[x * gridX + y] > 0)
+                    {
+                        Vector3 pos = grid[x * gridX + y].transform.position;
                     pos[1] = updates[x * gridX + y];
                     grid[x * gridX + y].transform.position = pos;
+
+                    posGrid[x * gridX + y] = pos;
+                    
+                    
+                    }
+                    else
+                    {
+                        rigids[x * gridX + y].constraints = RigidbodyConstraints.FreezeRotation;
+                        colliders[x * gridX + y].isTrigger = true;  
+                    }
 
 
                 }
@@ -167,6 +183,13 @@ public class GameController : MonoBehaviour {
         return gridTwo;
 
     }
+
+    void RandomLoss()
+    {
+        // Kouhai!!!
+
+    }
+
 
 
 

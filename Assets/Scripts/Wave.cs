@@ -7,7 +7,7 @@ public class Wave {
 
     int gridX, gridY;
     public int sourceX, sourceY;
-    float phase, force;
+    public float phase, Force;
     float phaseStat;
     float magnitude = 0;
     float finalmagnitude = 1f;
@@ -22,7 +22,7 @@ public class Wave {
         this.sourceX = sourceX;
         this.sourceY = sourceY;
         this.phase = phase;
-        this.force = force;
+        this.Force = force;
         phaseStat = phase;
     }
 
@@ -35,7 +35,7 @@ public class Wave {
                 //Wave equation with dampening over distance
 
 
-                updatePosGrid[x * gridX + y] = Mathf.Sin((dist - 1 * initTime)) / (dist + 4f) * force / 10f * magnitude * 1f;
+                updatePosGrid[x * gridX + y] = Mathf.Sin((dist - 1 * initTime)) / (dist + 4f) * Force / 10f * magnitude * 1f;
 
 
             }
@@ -54,7 +54,7 @@ public class Wave {
                     //Wave equation with dampening over distance
 
 
-                    updatePosGrid[x * gridX + y] = Mathf.Sin((dist - 1 * initTime)/2f) / (dist + 3f) * force / 10f * magnitude * 2f;
+                    updatePosGrid[x * gridX + y] = Mathf.Sin((dist - 1 * initTime)/2f) / (dist + 3f) * Force / 10f * magnitude * 2f;
                 }
                 
 
@@ -72,7 +72,6 @@ public class Wave {
         SimpleWave(updatePosGrid);
         //DirectionalWave(updatePosGrid);
 
-        GameController.phaseGrid[sourceX * gridX + sourceY] = updatePosGrid[sourceX * gridX + sourceY];
         magnitude = Mathf.Lerp(magnitude, finalmagnitude, 0.05f);
         initTime += Time.deltaTime*speed;
         if(initTime > 6f*speed)

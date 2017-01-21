@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour {
     void Start () {
         movementComplete = true;
         rigid = gameObject.GetComponent<Rigidbody>();
+        rigid.WakeUp();
         
         
 	}
@@ -72,7 +73,8 @@ public class PlayerController : MonoBehaviour {
     // Update is called once per frame
     void FixedUpdate()
     {
-        if(transform.position.y < -10f)
+        rigid.WakeUp();
+        if (transform.position.y < -10f)
         {
             GameController.Lose(this);
         }
@@ -105,56 +107,83 @@ public class PlayerController : MonoBehaviour {
             }
             if (Input.GetKeyDown(jump))
             {
-                
-                rigid.AddForce(Vector3.up * 600f);
+                StartCoroutine("TryJump");
             }
 
             forceVector = forceVector.normalized * accCons;
             rigid.AddForce(forceVector);
         }
     }
-    void Update () {
-		
-       
 
-	}
-
-    IEnumerator InitMoveUp()
+    IEnumerator TryJump()
     {
-        float oldPosX = position[0];
-        float oldPosY = position[1];
-        for(int i = 0; i<frames; i++)
+        for(int i = 0; i<15; i++)
         {
-            float x = (i+1) / frames;
-            position[0] = oldPosX + x;
-            position[1] = oldPosY -x * (x - 1)*10;
-            transform.position = position;
+            if(CheckBelow())
+            {
+                rigid.AddForce(Vector3.up * 700f);
+                int[] position = Transform2Index(transform, true);
+                int x = position[0];
+                int y = position[1];
+                Debug.Log(x);
+                GameController.hitCount[x * 15 + y] -= 1;
+
+                i = 15;
+            }
             yield return null;
         }
-        movementComplete = true;
     }
+
+    void Update () {
+
+        
+        if (CheckBelow() &&  rigid.velocity.y > 0.0f)
+        {
+            Debug.Log("Player Id" + playerId);
+            for (int i = 0; i < GameController.WaveCollection.Count; i++)
+            {
+                Wave wave = GameController.WaveCollection[i];
+                    rigid.AddExplosionForce(rigid.velocity.y * wave.Force * 0.1f, GameController.posGrid[i], 100f);
+
+            }
+
+        }
+
+    }
+
+    bool CheckBelow()
+    {
+        Ray ray = new Ray(transform.position, Vector3.down);
+        if (Physics.Raycast(ray, 0.6f))
+        {
+            
+            return true;
+            
+        }
+        else
+            return false;
+    }
+
 
     private void OnCollisionEnter(Collision collision)
     {
-        CreateWave(collision);
+        if(collision.gameObject.tag == "Ball")
+        {
+            rigid.AddExplosionForce(800f, (transform.position + collision.transform.position) / 2f, 100f);
+        }
+        else
+        {
+            CreateWave(collision);
+            
+        }
+        
     }
 
 
 
     private void OnCollisionStay(Collision collision)
     {
-        if (rigid.velocity.y > 0.0f)
-        {
-            for(int i = 0; i < GameController.hasWaveSource.Length; i++)
-            {
-                if(GameController.hasWaveSource[i])
-                {
-                    rigid.AddExplosionForce(rigid.velocity.y , new Vector3(i / 15, i % 15), 1000f);
-
-                }
-            }
-            
-        }
+        
     }
 
     void CreateWave(Collision collision)
@@ -162,31 +191,36 @@ public class PlayerController : MonoBehaviour {
         if (collision.relativeVelocity.y > 10f || collision.relativeVelocity.y < -10f)
         {
             Debug.Log("Collision");
-            int[] position = Transform2Index(collision.gameObject.transform);
-            if (!GameController.hasWaveSource[position[0] * 15 + position[1]] || true)
-            {
+            int[] position = Transform2Index(collision.gameObject.transform, false);
                 int x = position[0];
                 int y = position[1];
-                Wave wave = new Wave(GameController.gridX, GameController.gridY, x, y, GameController.phaseGrid[x * 15 + y], collision.relativeVelocity.y);
+            Debug.Log(collision.gameObject.transform.position.z);
+            Debug.Log(x);
+            Debug.Log(y);
+                Wave wave = new Wave(GameController.gridX, GameController.gridY, x, y, 0, collision.relativeVelocity.y);
                 GameController.WaveCollection.Add(wave);
                 GameController.hasWaveSource[x * 15 + y] = true;
-            }
                 
         }
     }
 
-    int[] Transform2Index(Transform trans)
+    int[] Transform2Index(Transform trans, bool isBall)
     {
         
         int[] result = new int[2];
-        result[0] = (int) trans.position.x;
-        result[1] = (int) trans.position.z;
+        result[0] = Mathf.FloorToInt(trans.position.x);
+        result[1] = Mathf.FloorToInt(trans.position.z);
+        if (isBall)
+        {
+            result[0] = Mathf.FloorToInt(trans.position.x) + 1;
+            result[1] = Mathf.FloorToInt(trans.position.z) + 1;
+        }
         return result;
     }
 
     void SnapGrid(Transform trans)
     {
-        snapTile = Transform2Index(trans);
+        snapTile = Transform2Index(trans, false);
         snapped = true;
     }
 
