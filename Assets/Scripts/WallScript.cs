@@ -11,6 +11,6 @@ public class WallScript : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        transform.Translate(Vector3.forward * 6 * Time.deltaTime, Space.Self);
+        transform.Translate(Vector3.forward * 1 * Time.deltaTime);
 	}
 }

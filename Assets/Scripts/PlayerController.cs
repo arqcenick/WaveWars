@@ -11,10 +11,14 @@ public class PlayerController : MonoBehaviour {
     Rigidbody rigid;
     float frames = 40;
     float accCons = 25f;
+    float jumpCons = 700f;
     // Use this for initialization
+
+    AudioSource[] sources;
     Renderer rend;
     int playerId;
-
+    public AudioClip JumpClip;
+    public AudioClip JumpKickClip;
     public static GameObject Wall;
 
     private void Awake()
@@ -25,13 +29,15 @@ public class PlayerController : MonoBehaviour {
         movementComplete = true;
         rigid = gameObject.GetComponent<Rigidbody>();
         rigid.WakeUp();
-
+        sources = gameObject.GetComponents<AudioSource>();
+        sources[0].clip = JumpClip;
+        sources[1].clip = JumpKickClip;
 
     }
     public bool snapped = false;
     public int[] snapTile;
 
-    private Attacks Inventory = Attacks.WallUp;
+    private Attacks Inventory = Attacks.None;
 
     KeyCode up;
     KeyCode left;
@@ -42,6 +48,10 @@ public class PlayerController : MonoBehaviour {
 
     bool jumping = false;
     bool attacking = false;
+
+    bool ironBall = false;
+    float ironTime = 10f;
+    float ironTimer = 0f;
 
 
 
@@ -141,17 +151,30 @@ public class PlayerController : MonoBehaviour {
             {
                 case Attacks.WallUp:
                     WallUp(forceVector);
-                    //Inventory = Attacks.None;
+                    Inventory = Attacks.None;
                     break;
                 case Attacks.IronBall:
-
-                    Inventory = Attacks.None;
+                    GoIronBall();
+                    //Inventory = Attacks.None;
                     break;
                 case Attacks.None:
                     DiveKick();
                     break;
                 default:
                     break;
+            }
+
+            if(ironBall)
+            {
+                ironTimer += Time.deltaTime;
+                if(ironTimer > ironTime)
+                {
+                    ironTimer = 0f;
+                    ironBall = false;
+                    rigid.mass = 1;
+                    accCons = 25f;
+                    jumpCons = 700f;
+                }
             }
         }
 
@@ -161,7 +184,6 @@ public class PlayerController : MonoBehaviour {
 
         if (CheckBelow() && rigid.velocity.y > 0.0f)
         {
-            Debug.Log("Player Id" + playerId);
             for (int i = 0; i < GameController.WaveCollection.Count; i++)
             {
                 Wave wave = GameController.WaveCollection[i];
@@ -179,13 +201,14 @@ public class PlayerController : MonoBehaviour {
         {
             if(CheckBelow())
             {
-                rigid.AddForce(Vector3.up * 700f);
+                rigid.AddForce(Vector3.up * jumpCons);
                 int[] position = Transform2Index(transform, true);
                 int x = position[0];
                 int y = position[1];
                 GameController.hitCount[x * 15 + y] -= 1;
-
                 i = 20;
+                
+                sources[0].Play();
                 
                 
             }
@@ -199,7 +222,7 @@ public class PlayerController : MonoBehaviour {
 
     IEnumerator TryDiveKick()
     {
-        float magnitude = 900f;
+        float magnitude = 600f;
         for (int i = 0; i < 10; i++)
         {
             attacking = false;
@@ -210,6 +233,7 @@ public class PlayerController : MonoBehaviour {
                 rigid.AddForce(direction * magnitude);
                 attacking = true;
                 i = 10;
+                sources[1].Play();
 
             }
             yield return null;
@@ -238,9 +262,10 @@ public class PlayerController : MonoBehaviour {
     {
         if(collision.gameObject.tag == "Ball")
         {
+            
             rigid.AddExplosionForce(800f, (transform.position + collision.transform.position) / 2f, 100f);
         }
-        else
+        else if(collision.gameObject.tag == "Tile")
         {
             CreateWave(collision);
             
@@ -259,14 +284,13 @@ public class PlayerController : MonoBehaviour {
     {
         if (collision.relativeVelocity.y > 10f || collision.relativeVelocity.y < -10f)
         {
-            Debug.Log("Collision");
             int[] position = Transform2Index(collision.gameObject.transform, false);
                 int x = position[0];
                 int y = position[1];
                 Wave wave = new Wave(GameController.gridX, GameController.gridY, x, y, 0, collision.relativeVelocity.y);
                 GameController.WaveCollection.Add(wave);
                 GameController.hasWaveSource[x * 15 + y] = true;
-                
+
         }
     }
 
@@ -281,6 +305,11 @@ public class PlayerController : MonoBehaviour {
             result[0] = Mathf.FloorToInt(trans.position.x) + 1;
             result[1] = Mathf.FloorToInt(trans.position.z) + 1;
         }
+        result[0] = Mathf.Max(result[0], 0);
+        result[1] = Mathf.Max(result[1], 0);
+
+        result[0] = Mathf.Min(result[0], 14);
+        result[1] = Mathf.Min(result[1], 14);
         return result;
     }
 
@@ -292,6 +321,7 @@ public class PlayerController : MonoBehaviour {
 
     public bool PickUpItem(Attacks item)
     {
+        Inventory = item;
         return true;
     }
 
@@ -305,9 +335,6 @@ public class PlayerController : MonoBehaviour {
             float angle = Vector3.Angle(Vector3.forward, forceVector);
             float angle2 = Vector3.Angle(Vector3.right, forceVector);
             int sign = angle2 == angle ? 1 : -1;
-            Debug.Log(sign);
-            Debug.Log(angle);
-            Debug.Log(angle2);
             if (angle < 90)
                 Instantiate(Wall, pos, Quaternion.AngleAxis(sign * angle, Vector3.up));
             else if(angle >= 90)
@@ -326,6 +353,14 @@ public class PlayerController : MonoBehaviour {
     {
         StartCoroutine("TryDiveKick");
         
+    }
+
+    void GoIronBall()
+    {
+        rigid.mass = 3f;
+        jumpCons = 2000f;
+        accCons = 60f;
+        ironBall = true;
     }
 
     

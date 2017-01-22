@@ -32,6 +32,7 @@ public class CameraControl : MonoBehaviour {
         SelectedOrtographicSize = Camera.main.orthographicSize;
         rotateClock = false;
 		rotateCounter = false;
+        GameController.GameEnd = false;
 
     }
 
@@ -114,8 +115,8 @@ public class CameraControl : MonoBehaviour {
             //Kouhai
             
             
-            Vector3 pos = new Vector3((Player1.transform.position.x + Player2.transform.position.x)/2 -12f,
-                20f,  + (Player2.transform.position.z + Player1.transform.position.z)/2 - 12f);
+            Vector3 pos = new Vector3((Player1.transform.position.x + Player2.transform.position.x)/2 -16f,
+                20f,  + (Player2.transform.position.z + Player1.transform.position.z)/2 - 16f);
             transform.position = pos;
 
             Vector3 distVector = (Player1.transform.position - Player2.transform.position);
@@ -125,8 +126,8 @@ public class CameraControl : MonoBehaviour {
         }
         else
         {
-            Vector3 pos = new Vector3(Winner.transform.position.x - 10f,
-                20f, Winner.transform.position.z- 16f);
+            Vector3 pos = new Vector3(Winner.transform.position.x - 16f,
+                20f, Winner.transform.position.z-16f);
             transform.position = pos;
             SelectedOrtographicSize = 3f;
         }

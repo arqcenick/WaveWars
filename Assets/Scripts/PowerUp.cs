@@ -11,6 +11,7 @@ public class PowerUp : MonoBehaviour {
     {
         int random = Random.Range(0, 1);
         type = (PlayerController.Attacks)random;
+        //type = PlayerController.Attacks.IronBall;
     }
 
     // Update is called once per frame
@@ -22,8 +23,10 @@ public class PowerUp : MonoBehaviour {
 
     private void OnCollisionEnter(Collision collision)
     {
+
         if (collision.gameObject.tag == "Ball")
         {
+
             PlayerController controller = collision.gameObject.GetComponent<PlayerController>();
             controller.PickUpItem(type);
             GameController.currentPowerUp = null;

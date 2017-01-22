@@ -1,7 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 public class GameController : MonoBehaviour {
 
 
@@ -9,16 +10,29 @@ public class GameController : MonoBehaviour {
     public GameObject Player;
     public GameObject PrePowerUp;
     public GameObject WallGlass;
+    public Material RedCube;
+    public Material BlueCube;
     public static GameObject Player1;
     public static int gridX = 15;
     public static int gridY = 15;
     public static int[] hitCount;
+
+    public GameObject redWins;
+    public GameObject blueWins;
+
+
+    static int winnerId;
+    AudioSource source;
 
     public static Vector3[] posGrid;
     public static float[] phaseGrid;
     public static bool[] hasWaveSource;
     float[] posX;
     float[] posY;
+
+    MeshRenderer[] meshrends;
+
+    int[] currentPowerUpPos;
 
     public static PowerUp currentPowerUp;
 
@@ -35,6 +49,7 @@ public class GameController : MonoBehaviour {
 
     float timeStep = 0f;
     float timeStep2 = 0f;
+    float timeStep3 = 0f;
 
     public static List<Wave> WaveCollection;
 
@@ -52,6 +67,7 @@ public class GameController : MonoBehaviour {
          Wave wave1 = new Wave(gridX, gridY, 7, 7, 0f, 10f);
          //WaveCollection.Add(wave1);
         CreateGrid();
+        currentPowerUpPos = new int[2];
         spawnPos = new Vector2[2];
         spawnPos[0] = playerGrid[0];
         spawnPos[1] = playerGrid[playerGrid.Length-1];
@@ -74,14 +90,35 @@ public class GameController : MonoBehaviour {
         if(timeStep > 4f)
         {
             timeStep = 0;
-            RandomLoss();
+            //RandomLoss();
         }
         if(timeStep2 > 5f)
         {
             timeStep2 = 0;
-            PutPowerUp();
+            //PutPowerUp();
         }
-        
+
+        if (GameEnd)
+        {
+            timeStep3 += Time.deltaTime;
+            if(timeStep3 > 4f)
+            {
+                if(winnerId == 0)
+                {
+                    //redWins.GetComponent<Fader>();
+                }
+            }
+        }
+
+        if (Input.GetKey(KeyCode.Escape))
+        {
+            Application.Quit();
+        }
+        if(Input.GetKey(KeyCode.R))
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            
+        }
         
 
 	}
@@ -101,14 +138,16 @@ public class GameController : MonoBehaviour {
         hitCount = new int[gridX * gridY];
         rigids = new Rigidbody[gridX * gridY];
         colliders = new BoxCollider[gridX * gridY];
+        meshrends = new MeshRenderer[gridX * gridY];
 
         for (int x = 0; x < gridX; x++)
             for(int y = 0; y < gridY; y++)
             {
-                grid[x * gridX + y] = (Instantiate(PreTile, new Vector3(x * 1f, 0f, y * 1f), transform.rotation) as GameObject);
+                grid[x * gridX + y] = (Instantiate(PreTile, new Vector3(x * 1f, 0f, y * 1f), Quaternion.Euler(-90,0,0)) as GameObject);
                 posGrid[x * gridX + y] = grid[x * gridX + y].transform.position;
                 rigids[x * gridX + y] = grid[x * gridX + y].GetComponent<Rigidbody>();
                 colliders[x * gridX + y] = grid[x * gridX + y].transform.GetChild(0).GetComponent<BoxCollider>();
+                meshrends[x * gridX + y] = grid[x * gridX + y].transform.GetChild(0).GetComponent<MeshRenderer>();
             }
 
         for (int x = 0; x < gridX; x++)
@@ -117,7 +156,7 @@ public class GameController : MonoBehaviour {
                 playerGrid[x * gridX + y] = new Vector2(x - 0.5f, y - 0.5f);
                 hasWaveSource[x * gridX + y] = false;
                 phaseGrid[x * gridX + y] = 0f;
-                hitCount[x * gridX + y] = 5;
+                hitCount[x * gridX + y] = 2;
             }
 
 
@@ -140,10 +179,12 @@ public class GameController : MonoBehaviour {
     {
         GameEnd = true;
         CameraControl.Winner = playerControls[1-player.PlayerId].gameObject;
-        { 
-}
-    }
-
+        winnerId = player.PlayerId;
+        
+         
+        
+        }
+    
     void UpdatePositions(List<Wave> waveCollection)
     {
         float[] updates = new float[gridX * gridY];
@@ -173,20 +214,35 @@ public class GameController : MonoBehaviour {
                     pos[1] = updates[x * gridX + y];
                     grid[x * gridX + y].transform.position = pos;
 
-                    posGrid[x * gridX + y] = pos;
-                    
-                    
+                        posGrid[x * gridX + y] = pos;
+                        if(x == currentPowerUpPos[0] && y == currentPowerUpPos[1])
+                            {
+                                pos.y = pos.y + 4.2f;
+                            if (currentPowerUp != null) 
+                                currentPowerUp.transform.position = pos;
+                            }
+                        if (hitCount[x * gridX + y] == 1)
+                        {
+                            meshrends[x * gridX + y].material = RedCube ;
+                        }
+
                     }
-                    else
-                    {
-                        rigids[x * gridX + y].constraints = RigidbodyConstraints.FreezeRotation;
-                        colliders[x * gridX + y].isTrigger = true;  
-                    }
+                    
 
 
                 }
           
         }
+        for (int x = 0; x < gridX; x++)
+            for (int y = 0; y < gridY; y++)
+            {
+                if(hitCount[x * gridX + y] <= 0)
+                {
+                    rigids[x * gridX + y].constraints = RigidbodyConstraints.FreezeRotation;
+                    colliders[x * gridX + y].isTrigger = true;
+                }
+                
+            }
     }
 
     float[] GridSum(float[] gridOne, float[] gridTwo)
@@ -203,6 +259,10 @@ public class GameController : MonoBehaviour {
     {
         // Kouhai!!!
 
+        int random = Random.Range(0, gridX * gridX - 1);
+        hitCount[random] = 0;
+        
+
     }
 
     void PutPowerUp()
@@ -214,7 +274,9 @@ public class GameController : MonoBehaviour {
         {
             Destroy(currentPowerUp.gameObject);
         }
-        currentPowerUp = (Instantiate(PrePowerUp, new Vector3(randX, 3.2f, randY), transform.rotation, transform) as GameObject).GetComponent<PowerUp>();
+        currentPowerUp = (Instantiate(PrePowerUp, new Vector3(randX, 4.5f, randY), transform.rotation) as GameObject).GetComponent<PowerUp>();
+        currentPowerUpPos[0] = randX;
+        currentPowerUpPos[1] = randY;
 
     }
 
