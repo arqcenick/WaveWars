@@ -114,21 +114,21 @@ public class CameraControl : MonoBehaviour {
             //Kouhai
             
             
-            Vector3 pos = new Vector3((Player1.transform.position.x + Player2.transform.position.x)/2 -10f,
-                20f,  + (Player2.transform.position.z + Player1.transform.position.z)/2 -10f);
+            Vector3 pos = new Vector3((Player1.transform.position.x + Player2.transform.position.x)/2 -12f,
+                20f,  + (Player2.transform.position.z + Player1.transform.position.z)/2 - 12f);
             transform.position = pos;
 
             Vector3 distVector = (Player1.transform.position - Player2.transform.position);
             float distance = Mathf.Sqrt(distVector.x * distVector.x + distVector.y * distVector.y);
-            SelectedOrtographicSize = 5f + distance/3f;
+            SelectedOrtographicSize = 3f + distance/2f;
 
         }
         else
         {
             Vector3 pos = new Vector3(Winner.transform.position.x - 10f,
-                20f, Winner.transform.position.z- 10f);
+                20f, Winner.transform.position.z- 16f);
             transform.position = pos;
-            SelectedOrtographicSize = 5f;
+            SelectedOrtographicSize = 3f;
         }
         camSpeed = Camera.main.orthographicSize * 10f / 4f;
     

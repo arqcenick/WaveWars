@@ -15,25 +15,43 @@ public class PlayerController : MonoBehaviour {
     Renderer rend;
     int playerId;
 
+    public static GameObject Wall;
+
     private void Awake()
     {
         rend = transform.GetChild(0).GetComponent<Renderer>();
     }
-    void Start () {
+    void Start() {
         movementComplete = true;
         rigid = gameObject.GetComponent<Rigidbody>();
         rigid.WakeUp();
-        
-        
-	}
+
+
+    }
     public bool snapped = false;
     public int[] snapTile;
+
+    private Attacks Inventory = Attacks.WallUp;
 
     KeyCode up;
     KeyCode left;
     KeyCode down;
     KeyCode right;
     KeyCode jump;
+    KeyCode attack;
+
+    bool jumping = false;
+    bool attacking = false;
+
+
+
+
+    public enum Attacks
+    {
+        WallUp,
+        IronBall,
+        None
+    }
 
     public int PlayerId
     {
@@ -44,24 +62,28 @@ public class PlayerController : MonoBehaviour {
 
         set
         {
-            if(value == 0)
+            if (value == 0)
             {
                 up = KeyCode.W;
                 left = KeyCode.A;
                 down = KeyCode.S;
                 right = KeyCode.D;
-                jump = KeyCode.Space;
+                jump = KeyCode.J;
+                attack = KeyCode.K;
+
                 rend.material.color = Color.white;
                 //Kouhai suki
 
             }
-            else if(value == 1)
+            else if (value == 1)
             {
                 up = KeyCode.UpArrow;
                 left = KeyCode.LeftArrow;
                 down = KeyCode.DownArrow;
                 right = KeyCode.RightArrow;
-                jump = KeyCode.KeypadEnter;
+                jump = KeyCode.Keypad2;
+                attack = KeyCode.Keypad3;
+
                 rend.material.color = Color.red;
             }
             playerId = value;
@@ -71,53 +93,89 @@ public class PlayerController : MonoBehaviour {
 
 
     // Update is called once per frame
-    void FixedUpdate()
+    void Update()
     {
-        rigid.WakeUp();
+
         if (transform.position.y < -10f)
         {
             GameController.Lose(this);
         }
         Vector3 forceVector = Vector3.zero;
-        if (Input.anyKey)
+
+        if (Input.GetKey(up))
         {
-            if (Input.GetKey(up))
+            //movementComplete = false;
+            //Kouhai <3 Sempai
+
+            forceVector = Vector3.right + Vector3.forward;
+
+
+            //Piremses
+
+        }
+        if (Input.GetKey(left))
+        {
+            forceVector += Vector3.left + Vector3.forward;
+
+        }
+        if (Input.GetKey(down))
+        {
+            forceVector += Vector3.back + Vector3.left;
+        }
+        if (Input.GetKey(right))
+        {
+            forceVector += Vector3.right + Vector3.back;
+        }
+        if (Input.GetKeyDown(jump) && !jumping)
+        {
+            jumping = true;
+            StartCoroutine("TryJump");
+
+
+        }
+        if (Input.GetKeyDown(attack) && !attacking)
+        {
+
+            attacking = true;
+            switch (Inventory)
             {
-                //movementComplete = false;
-                //Kouhai <3 Sempai
+                case Attacks.WallUp:
+                    WallUp(forceVector);
+                    //Inventory = Attacks.None;
+                    break;
+                case Attacks.IronBall:
 
-                forceVector = Vector3.right + Vector3.forward;
+                    Inventory = Attacks.None;
+                    break;
+                case Attacks.None:
+                    DiveKick();
+                    break;
+                default:
+                    break;
+            }
+        }
 
 
-                //Piremses
+        forceVector = forceVector.normalized * accCons;
+        rigid.AddForce(forceVector);
+
+        if (CheckBelow() && rigid.velocity.y > 0.0f)
+        {
+            Debug.Log("Player Id" + playerId);
+            for (int i = 0; i < GameController.WaveCollection.Count; i++)
+            {
+                Wave wave = GameController.WaveCollection[i];
+                rigid.AddExplosionForce(rigid.velocity.y * wave.Force * 0.1f, GameController.posGrid[i], 100f);
 
             }
-            if (Input.GetKey(left))
-            {
-                forceVector += Vector3.left + Vector3.forward;
 
-            }
-            if (Input.GetKey(down))
-            {
-                forceVector += Vector3.back + Vector3.left;
-            }
-            if (Input.GetKey(right))
-            {
-                forceVector += Vector3.right + Vector3.back;
-            }
-            if (Input.GetKeyDown(jump))
-            {
-                StartCoroutine("TryJump");
-            }
-
-            forceVector = forceVector.normalized * accCons;
-            rigid.AddForce(forceVector);
         }
     }
 
+
     IEnumerator TryJump()
     {
-        for(int i = 0; i<15; i++)
+        for(int i = 0; i<20; i++)
         {
             if(CheckBelow())
             {
@@ -125,39 +183,50 @@ public class PlayerController : MonoBehaviour {
                 int[] position = Transform2Index(transform, true);
                 int x = position[0];
                 int y = position[1];
-                Debug.Log(x);
                 GameController.hitCount[x * 15 + y] -= 1;
 
-                i = 15;
+                i = 20;
+                
+                
+            }
+  
+            
+            yield return null;
+        }
+        jumping = false;
+
+    }
+
+    IEnumerator TryDiveKick()
+    {
+        float magnitude = 900f;
+        for (int i = 0; i < 10; i++)
+        {
+            attacking = false;
+            if (!CheckBelow())
+            {
+                
+                Vector3 direction = (GameController.GetOtherPlayer(playerId).transform.position - transform.position).normalized;
+                rigid.AddForce(direction * magnitude);
+                attacking = true;
+                i = 10;
+
             }
             yield return null;
         }
-    }
-
-    void Update () {
-
         
-        if (CheckBelow() &&  rigid.velocity.y > 0.0f)
-        {
-            Debug.Log("Player Id" + playerId);
-            for (int i = 0; i < GameController.WaveCollection.Count; i++)
-            {
-                Wave wave = GameController.WaveCollection[i];
-                    rigid.AddExplosionForce(rigid.velocity.y * wave.Force * 0.1f, GameController.posGrid[i], 100f);
-
-            }
-
-        }
-
     }
+
+
 
     bool CheckBelow()
     {
         Ray ray = new Ray(transform.position, Vector3.down);
-        if (Physics.Raycast(ray, 0.6f))
+        if (Physics.Raycast(ray, 0.5f))
         {
-            
+            attacking = false;
             return true;
+
             
         }
         else
@@ -194,9 +263,6 @@ public class PlayerController : MonoBehaviour {
             int[] position = Transform2Index(collision.gameObject.transform, false);
                 int x = position[0];
                 int y = position[1];
-            Debug.Log(collision.gameObject.transform.position.z);
-            Debug.Log(x);
-            Debug.Log(y);
                 Wave wave = new Wave(GameController.gridX, GameController.gridY, x, y, 0, collision.relativeVelocity.y);
                 GameController.WaveCollection.Add(wave);
                 GameController.hasWaveSource[x * 15 + y] = true;
@@ -223,5 +289,45 @@ public class PlayerController : MonoBehaviour {
         snapTile = Transform2Index(trans, false);
         snapped = true;
     }
+
+    public bool PickUpItem(Attacks item)
+    {
+        return true;
+    }
+
+    void WallUp(Vector3 forceVector)
+    {
+        
+        if(forceVector.magnitude > 0)
+        {
+            Vector3 pos = transform.position + forceVector.normalized*3f;
+
+            float angle = Vector3.Angle(Vector3.forward, forceVector);
+            float angle2 = Vector3.Angle(Vector3.right, forceVector);
+            int sign = angle2 == angle ? 1 : -1;
+            Debug.Log(sign);
+            Debug.Log(angle);
+            Debug.Log(angle2);
+            if (angle < 90)
+                Instantiate(Wall, pos, Quaternion.AngleAxis(sign * angle, Vector3.up));
+            else if(angle >= 90)
+            {
+                if(angle2 == 180)
+                    Instantiate(Wall, pos, Quaternion.AngleAxis(sign * angle, Vector3.up));
+                else
+                    Instantiate(Wall, pos, Quaternion.AngleAxis(sign * angle, Vector3.down));
+            }
+                
+        }
+
+    }
+
+    void DiveKick()
+    {
+        StartCoroutine("TryDiveKick");
+        
+    }
+
+    
 
 }

@@ -7,6 +7,8 @@ public class GameController : MonoBehaviour {
 
     public GameObject PreTile;
     public GameObject Player;
+    public GameObject PrePowerUp;
+    public GameObject WallGlass;
     public static GameObject Player1;
     public static int gridX = 15;
     public static int gridY = 15;
@@ -17,6 +19,8 @@ public class GameController : MonoBehaviour {
     public static bool[] hasWaveSource;
     float[] posX;
     float[] posY;
+
+    public static PowerUp currentPowerUp;
 
     public static bool GameEnd = false;
 
@@ -30,6 +34,7 @@ public class GameController : MonoBehaviour {
     BoxCollider[] colliders;
 
     float timeStep = 0f;
+    float timeStep2 = 0f;
 
     public static List<Wave> WaveCollection;
 
@@ -43,7 +48,7 @@ public class GameController : MonoBehaviour {
     void Start () {
 
         WaveCollection = new List<Wave>();
-        
+        PlayerController.Wall = WallGlass;
          Wave wave1 = new Wave(gridX, gridY, 7, 7, 0f, 10f);
          //WaveCollection.Add(wave1);
         CreateGrid();
@@ -63,7 +68,7 @@ public class GameController : MonoBehaviour {
 	void Update () {
 
         timeStep += Time.deltaTime;
-        
+        timeStep2 += Time.deltaTime;
         UpdatePositions(WaveCollection);
 
         if(timeStep > 4f)
@@ -71,10 +76,20 @@ public class GameController : MonoBehaviour {
             timeStep = 0;
             RandomLoss();
         }
+        if(timeStep2 > 5f)
+        {
+            timeStep2 = 0;
+            PutPowerUp();
+        }
         
         
 
 	}
+
+    public static PlayerController GetOtherPlayer(int playerId)
+    {
+        return playerControls[1 - playerId];
+    }
 
     void CreateGrid()
     {
@@ -102,7 +117,7 @@ public class GameController : MonoBehaviour {
                 playerGrid[x * gridX + y] = new Vector2(x - 0.5f, y - 0.5f);
                 hasWaveSource[x * gridX + y] = false;
                 phaseGrid[x * gridX + y] = 0f;
-                hitCount[x * gridX + y] = 1;
+                hitCount[x * gridX + y] = 5;
             }
 
 
@@ -187,6 +202,19 @@ public class GameController : MonoBehaviour {
     void RandomLoss()
     {
         // Kouhai!!!
+
+    }
+
+    void PutPowerUp()
+    {
+        int randX = Random.Range(0, 14);
+        int randY = Random.Range(0, 14);
+
+        if(currentPowerUp != null)
+        {
+            Destroy(currentPowerUp.gameObject);
+        }
+        currentPowerUp = (Instantiate(PrePowerUp, new Vector3(randX, 3.2f, randY), transform.rotation, transform) as GameObject).GetComponent<PowerUp>();
 
     }
 
