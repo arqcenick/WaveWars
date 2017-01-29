@@ -19,6 +19,9 @@ public class GameController : MonoBehaviour {
 
     public GameObject redWins;
     public GameObject blueWins;
+    Image redWinsImg;
+    Image blueWinsImg;
+
 
 
     static int winnerId;
@@ -72,16 +75,41 @@ public class GameController : MonoBehaviour {
         spawnPos[0] = playerGrid[0];
         spawnPos[1] = playerGrid[playerGrid.Length-1];
 
+        redWinsImg = redWins.GetComponent<Image>();
+        blueWinsImg = blueWins.GetComponent<Image>();
         CreatePlayer(0);
         CreatePlayer(1);
 
 
     }
 
-    
-	
-	// Update is called once per frame
-	void Update () {
+    IEnumerator FadeInRed()
+    {
+        Color color = Color.white;
+        color.a = 0;
+        for(int i=0; i<256; i++)
+        {
+            color.a = i;
+            redWinsImg.color = color;
+            yield return null;
+        }
+    }
+    IEnumerator FadeInBlue()
+    {
+        Color color = Color.white;
+        color.a = 0;
+        for (int i = 0; i < 256; i++)
+        {
+            color.a = i;
+            blueWinsImg.color = color;
+            yield return null;
+        }
+    }
+
+
+
+    // Update is called once per frame
+    void Update () {
 
         timeStep += Time.deltaTime;
         timeStep2 += Time.deltaTime;
@@ -90,7 +118,7 @@ public class GameController : MonoBehaviour {
         if(timeStep > 4f)
         {
             timeStep = 0;
-            //RandomLoss();
+            RandomLoss();
         }
         if(timeStep2 > 5f)
         {
@@ -101,11 +129,15 @@ public class GameController : MonoBehaviour {
         if (GameEnd)
         {
             timeStep3 += Time.deltaTime;
-            if(timeStep3 > 4f)
+            if(timeStep3 > 2f)
             {
-                if(winnerId == 0)
+                if(winnerId == 1)
                 {
-                    //redWins.GetComponent<Fader>();
+                    StartCoroutine("FadeInBlue");
+                }
+                else
+                {
+                    StartCoroutine("FadeInRed");
                 }
             }
         }
@@ -179,8 +211,8 @@ public class GameController : MonoBehaviour {
     {
         GameEnd = true;
         CameraControl.Winner = playerControls[1-player.PlayerId].gameObject;
+        playerControls[1 - player.PlayerId].InputsActive = false;
         winnerId = player.PlayerId;
-        
          
         
         }

@@ -26,6 +26,7 @@ public class PlayerController : MonoBehaviour {
         rend = transform.GetChild(0).GetComponent<Renderer>();
     }
     void Start() {
+        InputsActive = true;
         movementComplete = true;
         rigid = gameObject.GetComponent<Rigidbody>();
         rigid.WakeUp();
@@ -48,11 +49,13 @@ public class PlayerController : MonoBehaviour {
 
     bool jumping = false;
     bool attacking = false;
+    public bool InputsActive;
+
 
     bool ironBall = false;
     float ironTime = 10f;
     float ironTimer = 0f;
-
+    
 
 
 
@@ -109,74 +112,58 @@ public class PlayerController : MonoBehaviour {
         if (transform.position.y < -10f)
         {
             GameController.Lose(this);
+            InputsActive = false;
         }
         Vector3 forceVector = Vector3.zero;
 
-        if (Input.GetKey(up))
+        if(InputsActive)
         {
-            //movementComplete = false;
-            //Kouhai <3 Sempai
-
-            forceVector = Vector3.right + Vector3.forward;
-
-
-            //Piremses
-
-        }
-        if (Input.GetKey(left))
-        {
-            forceVector += Vector3.left + Vector3.forward;
-
-        }
-        if (Input.GetKey(down))
-        {
-            forceVector += Vector3.back + Vector3.left;
-        }
-        if (Input.GetKey(right))
-        {
-            forceVector += Vector3.right + Vector3.back;
-        }
-        if (Input.GetKeyDown(jump) && !jumping)
-        {
-            jumping = true;
-            StartCoroutine("TryJump");
-
-
-        }
-        if (Input.GetKeyDown(attack) && !attacking)
-        {
-
-            attacking = true;
-            switch (Inventory)
+            if (Input.GetKey(up))
             {
-                case Attacks.WallUp:
-                    WallUp(forceVector);
-                    Inventory = Attacks.None;
-                    break;
-                case Attacks.IronBall:
-                    GoIronBall();
-                    //Inventory = Attacks.None;
-                    break;
-                case Attacks.None:
-                    DiveKick();
-                    break;
-                default:
-                    break;
+                //movementComplete = false;
+                //Kouhai <3 Sempai
+
+                forceVector = Vector3.right + Vector3.forward;
+
+
+                //Piremses
+
             }
-
-            if(ironBall)
+            if (Input.GetKey(left))
             {
-                ironTimer += Time.deltaTime;
-                if(ironTimer > ironTime)
+                forceVector += Vector3.left + Vector3.forward;
+
+            }
+            if (Input.GetKey(down))
+            {
+                forceVector += Vector3.back + Vector3.left;
+            }
+            if (Input.GetKey(right))
+            {
+                forceVector += Vector3.right + Vector3.back;
+            }
+            if (Input.GetKeyDown(jump) && !jumping)
+            {
+                jumping = true;
+                StartCoroutine("TryJump");
+
+
+            }
+            if (Input.GetKeyDown(attack) && !attacking)
+            {
+
+                attacking = true;
+                switch (Inventory)
                 {
-                    ironTimer = 0f;
-                    ironBall = false;
-                    rigid.mass = 1;
-                    accCons = 25f;
-                    jumpCons = 700f;
+                    case Attacks.None:
+                        DiveKick();
+                        break;
+                    default:
+                        break;
                 }
             }
         }
+        
 
 
         forceVector = forceVector.normalized * accCons;
@@ -207,6 +194,7 @@ public class PlayerController : MonoBehaviour {
                 int y = position[1];
                 GameController.hitCount[x * 15 + y] -= 1;
                 i = 20;
+                Debug.Log("jumping");
                 
                 sources[0].Play();
                 
@@ -245,8 +233,13 @@ public class PlayerController : MonoBehaviour {
 
     bool CheckBelow()
     {
-        Ray ray = new Ray(transform.position, Vector3.down);
-        if (Physics.Raycast(ray, 0.5f))
+        
+        Ray ray1 = new Ray(transform.position, Vector3.down + Vector3.right * 0.3f);
+        Ray ray2 = new Ray(transform.position, Vector3.down + Vector3.left * 0.3f);
+        Ray ray3 = new Ray(transform.position, Vector3.down + Vector3.forward * 0.3f);
+        Ray ray4 = new Ray(transform.position, Vector3.down + Vector3.back * 0.3f);
+        //Debug.DrawRay(transform.position, Vector3.down + Vector3.forward *0.5f, Color.white,10f);
+        if (Physics.Raycast(ray1, 0.7f) || Physics.Raycast(ray2, 0.7f) || Physics.Raycast(ray3, 0.7f) || Physics.Raycast(ray4, 0.7f))
         {
             attacking = false;
             return true;
@@ -355,13 +348,6 @@ public class PlayerController : MonoBehaviour {
         
     }
 
-    void GoIronBall()
-    {
-        rigid.mass = 3f;
-        jumpCons = 2000f;
-        accCons = 60f;
-        ironBall = true;
-    }
 
     
 
